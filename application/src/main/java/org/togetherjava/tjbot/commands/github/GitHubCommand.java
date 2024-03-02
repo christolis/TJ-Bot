@@ -68,6 +68,7 @@ public final class GitHubCommand extends SlashCommandAdapter {
 
     @Override
     public void onSlashCommand(SlashCommandInteractionEvent event) {
+        // asd
         String titleOption = event.getOption(TITLE_OPTION).getAsString();
         Matcher matcher = GitHubReference.ISSUE_REFERENCE_PATTERN.matcher(titleOption);
 
