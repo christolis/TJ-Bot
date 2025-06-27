@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.togetherjava.tjbot.config.Config;
-import org.togetherjava.tjbot.config.CoolMessagesBoardConfig;
+import org.togetherjava.tjbot.config.QuoteBoardConfig;
 import org.togetherjava.tjbot.features.MessageReceiverAdapter;
 
 import java.util.Optional;
@@ -19,37 +19,36 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * Manager for the cool messages board. It appends highly-voted text messages to a separate channel
- * where members of the guild can see a list of all of them.
+ * user reacts to a message with a configured emoji it then forwards this message to the configured
+ * quote board channel
  */
-public final class CoolMessagesBoardManager extends MessageReceiverAdapter {
+public final class QuoteBoardForwarder extends MessageReceiverAdapter {
 
-    private static final Logger logger = LoggerFactory.getLogger(CoolMessagesBoardManager.class);
-    private final Emoji coolEmoji;
-    private final Predicate<String> boardChannelNamePredicate;
-    private final CoolMessagesBoardConfig config;
+    private static final Logger logger = LoggerFactory.getLogger(QuoteBoardForwarder.class);
+    private final Emoji triggerReaction;
+    private final Predicate<String> isQuoteBoardChannelName;
+    private final QuoteBoardConfig config;
 
     /**
-     * Constructs a new instance of CoolMessagesBoardManager.
+     * Constructs a new instance of QuoteBoardForwarder.
      *
      * @param config the configuration containing settings specific to the cool messages board,
      *        including the reaction emoji and the pattern to match board channel names
      */
-    public CoolMessagesBoardManager(Config config) {
+    public QuoteBoardForwarder(Config config) {
         this.config = config.getCoolMessagesConfig();
-        this.coolEmoji = Emoji.fromUnicode(this.config.reactionEmoji());
+        this.triggerReaction = Emoji.fromUnicode(this.config.reactionEmoji());
 
-        boardChannelNamePredicate =
+        isQuoteBoardChannelName =
                 Pattern.compile(this.config.boardChannelPattern()).asMatchPredicate();
     }
 
     @Override
     public void onMessageReactionAdd(MessageReactionAddEvent event) {
         final MessageReaction messageReaction = event.getReaction();
-        int originalReactionsCount = messageReaction.hasCount() ? messageReaction.getCount() : 0;
-        boolean isCoolEmoji = messageReaction.getEmoji().equals(coolEmoji);
+        boolean isCoolEmoji = messageReaction.getEmoji().equals(triggerReaction);
         long guildId = event.getGuild().getIdLong();
-        Optional<TextChannel> boardChannel = getBoardChannel(event.getJDA(), guildId);
+        Optional<TextChannel> boardChannel = findQuoteBoardChannel(event.getJDA(), guildId);
 
         if (boardChannel.isEmpty()) {
             logger.warn(
@@ -58,20 +57,19 @@ public final class CoolMessagesBoardManager extends MessageReceiverAdapter {
             return;
         }
 
-        // If the bot has already reacted to this message, then this means that
-        // the message has been quoted to the cool messages board, so skip it.
-        if (hasBotReacted(event.getJDA(), messageReaction)) {
+        if (hasAlreadyForwardedMessage(event.getJDA(), messageReaction)) {
             return;
         }
 
-        final int newReactionsCount = originalReactionsCount + 1;
-        if (isCoolEmoji && newReactionsCount >= config.minimumReactions()) {
+        final int reactionsCount = messageReaction.hasCount() ? messageReaction.getCount() + 1 : 1;
+        if (isCoolEmoji && reactionsCount >= config.minimumReactions()) {
             event.retrieveMessage()
-                .queue(message -> message.addReaction(coolEmoji)
-                    .flatMap(v -> insertCoolMessage(boardChannel.get(), message))
+                .queue(message -> message.addReaction(triggerReaction)
+                    .flatMap(v -> insertCoolMessage(boardChannel.orElseThrow(), message))
                     .queue(),
-                        e -> logger.warn("Tried to retrieve cool message but got: {}",
-                                e.getMessage()));
+                        e -> logger.warn(
+                                "Unknown error while attempting to retrieve and forward message for quote-board, message is ignored.",
+                                e));
         }
     }
 
@@ -82,11 +80,11 @@ public final class CoolMessagesBoardManager extends MessageReceiverAdapter {
      * @param guildId the guild ID
      * @return the board text channel
      */
-    private Optional<TextChannel> getBoardChannel(JDA jda, long guildId) {
+    private Optional<TextChannel> findQuoteBoardChannel(JDA jda, long guildId) {
         return jda.getGuildById(guildId)
             .getTextChannelCache()
             .stream()
-            .filter(channel -> boardChannelNamePredicate.test(channel.getName()))
+            .filter(channel -> isQuoteBoardChannelName.test(channel.getName()))
             .findAny();
     }
 
@@ -95,16 +93,16 @@ public final class CoolMessagesBoardManager extends MessageReceiverAdapter {
      *
      * @return a {@link MessageCreateAction} of the call to make
      */
-    private static MessageCreateAction insertCoolMessage(TextChannel boardChannel,
+    private static MessageCreateAction insertCoolMessage(TextChannel quoteBoardChannel,
             Message message) {
-        return message.forwardTo(boardChannel);
+        return message.forwardTo(quoteBoardChannel);
     }
 
     /**
      * Checks a {@link MessageReaction} to see if the bot has reacted to it.
      */
-    private boolean hasBotReacted(JDA jda, MessageReaction messageReaction) {
-        if (!coolEmoji.equals(messageReaction.getEmoji())) {
+    private boolean hasAlreadyForwardedMessage(JDA jda, MessageReaction messageReaction) {
+        if (!triggerReaction.equals(messageReaction.getEmoji())) {
             return false;
         }
 
