@@ -3,12 +3,10 @@ package org.togetherjava.tjbot.config;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
 
-import org.togetherjava.tjbot.features.basic.QuoteBoardForwarder;
-
 import java.util.Objects;
 
 /**
- * Configuration for the cool messages board feature, see {@link QuoteBoardForwarder}.
+ * Configuration for the cool messages board feature, see {@link ``QuoteBoardForwarder``}.
  */
 @JsonRootName("coolMessagesConfig")
 public record QuoteBoardConfig(

@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +20,9 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * user reacts to a message with a configured emoji it then forwards this message to the configured
- * quote board channel
+ * Manager for the cool messages board. It appends highly-voted text messages to a separate channel
+ * where members of the guild can see a list of all of them. User reacts to a message with a
+ * configured emoji it then forwards this message to the configured quote board channel
  */
 public final class QuoteBoardForwarder extends MessageReceiverAdapter {
 
@@ -48,14 +50,6 @@ public final class QuoteBoardForwarder extends MessageReceiverAdapter {
         final MessageReaction messageReaction = event.getReaction();
         boolean isCoolEmoji = messageReaction.getEmoji().equals(triggerReaction);
         long guildId = event.getGuild().getIdLong();
-        Optional<TextChannel> boardChannel = findQuoteBoardChannel(event.getJDA(), guildId);
-
-        if (boardChannel.isEmpty()) {
-            logger.warn(
-                    "Could not find board channel with pattern '{}' in server with ID '{}'. Skipping reaction handling...",
-                    this.config.boardChannelPattern(), guildId);
-            return;
-        }
 
         if (hasAlreadyForwardedMessage(event.getJDA(), messageReaction)) {
             return;
@@ -63,14 +57,27 @@ public final class QuoteBoardForwarder extends MessageReceiverAdapter {
 
         final int reactionsCount = messageReaction.hasCount() ? messageReaction.getCount() + 1 : 1;
         if (isCoolEmoji && reactionsCount >= config.minimumReactions()) {
+            Optional<TextChannel> boardChannel = findQuoteBoardChannel(event.getJDA(), guildId);
+
+            if (boardChannel.isEmpty()) {
+                logger.warn(
+                        "Could not find board channel with pattern '{}' in server with ID '{}'. Skipping reaction handling...",
+                        this.config.boardChannelPattern(), guildId);
+                return;
+            }
+
             event.retrieveMessage()
-                .queue(message -> message.addReaction(triggerReaction)
+                .queue(message -> markAsProcessed(message)
                     .flatMap(v -> insertCoolMessage(boardChannel.orElseThrow(), message))
                     .queue(),
                         e -> logger.warn(
                                 "Unknown error while attempting to retrieve and forward message for quote-board, message is ignored.",
                                 e));
         }
+    }
+
+    private RestAction<Void> markAsProcessed(Message message) {
+        return message.addReaction(triggerReaction);
     }
 
     /**
