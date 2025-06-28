@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.requests.RestAction;
-import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,12 +66,10 @@ public final class QuoteBoardForwarder extends MessageReceiverAdapter {
             }
 
             event.retrieveMessage()
-                .queue(message -> markAsProcessed(message)
-                    .flatMap(v -> insertCoolMessage(boardChannel.orElseThrow(), message))
-                    .queue(),
-                        e -> logger.warn(
-                                "Unknown error while attempting to retrieve and forward message for quote-board, message is ignored.",
-                                e));
+                .queue(message -> markAsProcessed(message).flatMap(v -> message
+                    .forwardTo(boardChannel.orElseThrow())).queue(), e -> logger.warn(
+                            "Unknown error while attempting to retrieve and forward message for quote-board, message is ignored.",
+                            e));
         }
     }
 
@@ -100,10 +97,6 @@ public final class QuoteBoardForwarder extends MessageReceiverAdapter {
      *
      * @return a {@link MessageCreateAction} of the call to make
      */
-    private static MessageCreateAction insertCoolMessage(TextChannel quoteBoardChannel,
-            Message message) {
-        return message.forwardTo(quoteBoardChannel);
-    }
 
     /**
      * Checks a {@link MessageReaction} to see if the bot has reacted to it.
