@@ -54,7 +54,7 @@ public final class QuoteBoardForwarder extends MessageReceiverAdapter {
             return;
         }
 
-        final int reactionsCount = messageReaction.hasCount() ? messageReaction.getCount() + 1 : 1;
+        final int reactionsCount = (int) messageReaction.retrieveUsers().stream().count();
         if (isCoolEmoji && reactionsCount >= config.minimumReactions()) {
             Optional<TextChannel> boardChannel = findQuoteBoardChannel(event.getJDA(), guildId);
 
