@@ -4,12 +4,4 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-patch"]
     open-pull-requests-limit: 10
-  - package-ecosystem: "gradle"
-    directory: "/application"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
