@@ -233,7 +233,7 @@ public class CakeDayService {
      * @param user the {@link User} who left the guild
      * @param guild the {@link Guild} from which the user left
      */
-    protected void handleUserLeft(User user, Guild guild) {
+    protected void removeUserCakeDay(User user, Guild guild) {
         removeMemberCakeDayFromDatabase(user.getIdLong(), guild.getIdLong());
         cakeDaysCache.remove(guild.getId());
     }

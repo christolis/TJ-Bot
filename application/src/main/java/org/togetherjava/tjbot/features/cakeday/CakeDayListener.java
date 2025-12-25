@@ -74,6 +74,6 @@ public class CakeDayListener extends ListenerAdapter implements EventReceiver {
         User user = event.getUser();
         Guild guild = event.getGuild();
 
-        cakeDayService.handleUserLeft(user, guild);
+        cakeDayService.removeUserCakeDay(user, guild);
     }
 }
