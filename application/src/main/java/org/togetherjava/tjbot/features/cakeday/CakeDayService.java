@@ -157,45 +157,35 @@ public class CakeDayService {
     }
 
     /**
-     * Creates a query to insert a member's cake day information into the database.
+     * Asynchronously inserts a member's cake day information into the database.
      *
-     * @param member the member whose cake day information is to be inserted
-     * @param guildId the ID of the guild to which the member belongs
-     * @return an Optional containing the query to insert cake day information if the member has a
-     *         join time; empty Optional otherwise
-     */
-    private static Optional<Query> createMemberCakeDayQuery(Member member, long guildId) {
-        if (!member.hasTimeJoined()) {
-            return Optional.empty();
-        }
-
-        OffsetDateTime cakeDay = member.getTimeJoined();
-        String joinedMonthDay = cakeDay.format(MONTH_DAY_FORMATTER);
-
-        return Optional.of(DSL.insertInto(CAKE_DAYS)
-            .set(CAKE_DAYS.JOINED_MONTH_DAY, joinedMonthDay)
-            .set(CAKE_DAYS.JOINED_YEAR, cakeDay.getYear())
-            .set(CAKE_DAYS.GUILD_ID, guildId)
-            .set(CAKE_DAYS.USER_ID, member.getIdLong()));
-    }
-
-    /**
-     * Inserts the cake day of a member into the database.
      * <p>
-     * If the member has no join date, nothing happens.
+     * This method retrieves the {@link Member} from the Discord API to obtain the member's join
+     * timestamp, derives the month/day portion using {@code MONTH_DAY_FORMATTER}, and then inserts
+     * a row into {@code CAKE_DAYS} with the join month-day, join year, guild id, and user id.
      *
-     * @param member the member whose cake day is to be inserted into the database
-     * @param guildId the ID of the guild to which the member belongs
+     * <p>
+     * The Discord retrieval is performed asynchronously; on success the database write is executed.
+     * If the Discord retrieval fails (e.g., member not found, missing permissions, network issues),
+     * the insert is skipped and a warning is logged.
+     *
+     * @param member the member whose cake day information should be inserted
+     * @param guildId the id of the guild associated with the cake day record
      */
     protected void insertMemberCakeDayToDatabase(Member member, long guildId) {
-        Query insertQuery = createMemberCakeDayQuery(member, guildId).orElse(null);
+        member.getGuild().retrieveMemberById(member.getIdLong()).queue(retrievedMember -> {
+            OffsetDateTime timeJoined = retrievedMember.getTimeJoined();
+            String joinedMonthDay = timeJoined.format(MONTH_DAY_FORMATTER);
 
-        if (insertQuery == null) {
-            logger.warn("Tried to add member {} to database but found no time joined",
-                    member.getId());
-        }
+            Query query = DSL.insertInto(CAKE_DAYS)
+                .set(CAKE_DAYS.JOINED_MONTH_DAY, joinedMonthDay)
+                .set(CAKE_DAYS.JOINED_YEAR, timeJoined.getYear())
+                .set(CAKE_DAYS.GUILD_ID, guildId)
+                .set(CAKE_DAYS.USER_ID, member.getIdLong());
 
-        database.write(context -> context.execute(insertQuery));
+            database.write(ctx -> ctx.execute(query));
+        }, failure -> logger.warn("Could not insert member cake day into the database: {}",
+                failure.getMessage()));
     }
 
     /**
