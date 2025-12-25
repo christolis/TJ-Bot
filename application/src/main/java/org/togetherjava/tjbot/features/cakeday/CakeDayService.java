@@ -195,7 +195,7 @@ public class CakeDayService {
                     member.getId());
         }
 
-        database.write(context -> context.batch(insertQuery).execute());
+        database.write(context -> context.execute(insertQuery));
     }
 
     /**
