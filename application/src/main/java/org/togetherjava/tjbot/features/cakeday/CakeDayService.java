@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.togetherjava.tjbot.db.generated.tables.CakeDays.CAKE_DAYS;
 
@@ -247,12 +246,10 @@ public class CakeDayService {
     private List<CakeDaysRecord> findCakeDaysTodayFromDatabase(Guild guild) {
         String todayMonthDay = OffsetDateTime.now().format(MONTH_DAY_FORMATTER);
 
-        return database
-            .read(context -> context.selectFrom(CAKE_DAYS)
-                .where(CAKE_DAYS.JOINED_MONTH_DAY.eq(todayMonthDay))
-                .and(CAKE_DAYS.GUILD_ID.eq(guild.getIdLong()))
-                .fetch())
-            .collect(Collectors.toList());
+        return database.read(context -> context.selectFrom(CAKE_DAYS)
+            .where(CAKE_DAYS.JOINED_MONTH_DAY.eq(todayMonthDay))
+            .and(CAKE_DAYS.GUILD_ID.eq(guild.getIdLong()))
+            .fetch());
     }
 
     /**
