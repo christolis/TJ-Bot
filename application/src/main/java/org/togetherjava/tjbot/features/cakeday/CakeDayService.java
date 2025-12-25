@@ -4,7 +4,6 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.UserSnowflake;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.Query;
 import org.jooq.impl.DSL;
@@ -144,9 +143,8 @@ public class CakeDayService {
      */
     private void addCakeDayRole(Member member, @NotNull Role cakeDayRole) {
         Guild guild = member.getGuild();
-        UserSnowflake snowflake = UserSnowflake.fromId(member.getId());
 
-        guild.addRoleToMember(snowflake, cakeDayRole).queue();
+        guild.addRoleToMember(member, cakeDayRole).queue();
     }
 
     /**
