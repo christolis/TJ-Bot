@@ -164,7 +164,7 @@ public class CakeDayService {
      * @return an Optional containing the query to insert cake day information if the member has a
      *         join time; empty Optional otherwise
      */
-    private Optional<Query> createMemberCakeDayQuery(Member member, long guildId) {
+    private static Optional<Query> createMemberCakeDayQuery(Member member, long guildId) {
         if (!member.hasTimeJoined()) {
             return Optional.empty();
         }
