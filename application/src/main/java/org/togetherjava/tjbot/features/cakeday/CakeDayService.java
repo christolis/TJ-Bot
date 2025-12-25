@@ -109,12 +109,11 @@ public class CakeDayService {
                 return;
             }
 
-            boolean isAnniversaryDay = hasMemberCakeDayToday(member);
-            int yearsSinceJoin = OffsetDateTime.now().getYear() - cakeDayRecord.getJoinedYear();
-
-            if (yearsSinceJoin > 0 && isAnniversaryDay) {
-                addCakeDayRole(member, cakeDayRole);
+            if (!hasMemberCakeDayToday(member)) {
+                return;
             }
+
+            addCakeDayRole(member, cakeDayRole);
         });
     }
 
