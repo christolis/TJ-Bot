@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.UserSnowflake;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.Query;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
@@ -87,7 +88,7 @@ public class CakeDayService {
     private void refreshMembersCakeDayRoles(Role cakeDayRole, Guild guild) {
         guild.findMembersWithRoles(cakeDayRole).onSuccess(members -> {
             removeRoleFromMembers(guild, cakeDayRole, members);
-            addTodayMembersCakeDayRole(guild);
+            addTodayMembersCakeDayRole(guild, cakeDayRole);
         });
     }
 
@@ -101,7 +102,7 @@ public class CakeDayService {
      *
      * @param guild the guild to check for members celebrating their cake day today
      */
-    private void addTodayMembersCakeDayRole(Guild guild) {
+    private void addTodayMembersCakeDayRole(Guild guild, Role cakeDayRole) {
         findCakeDaysTodayFromDatabase(guild).forEach(cakeDayRecord -> {
             Member member = guild.getMemberById(cakeDayRecord.getUserId());
 
@@ -113,26 +114,39 @@ public class CakeDayService {
             int yearsSinceJoin = OffsetDateTime.now().getYear() - cakeDayRecord.getJoinedYear();
 
             if (yearsSinceJoin > 0 && isAnniversaryDay) {
-                addCakeDayRole(member);
+                addCakeDayRole(member, cakeDayRole);
             }
         });
     }
 
     /**
-     * Adds the cake day role to the specified member if the cake day role exists in the guild.
+     * Adds the cake day role supplied to the specified member if the cake day role exists in the
+     * guild.
      *
      * @param member the {@link Member} to whom the cake day role will be added
      */
     protected void addCakeDayRole(Member member) {
         Guild guild = member.getGuild();
-        UserSnowflake snowflake = UserSnowflake.fromId(member.getId());
         Optional<Role> cakeDayRole = getCakeDayRole(guild);
 
         if (cakeDayRole.isEmpty()) {
             return;
         }
 
-        guild.addRoleToMember(snowflake, cakeDayRole.get()).complete();
+        addCakeDayRole(member, cakeDayRole.get());
+    }
+
+    /**
+     * Adds the cake day role supplied to the specified member.
+     *
+     * @param member the {@link Member} to whom the cake day role will be added
+     * @param cakeDayRole the cake day {@link Role}
+     */
+    private void addCakeDayRole(Member member, @NotNull Role cakeDayRole) {
+        Guild guild = member.getGuild();
+        UserSnowflake snowflake = UserSnowflake.fromId(member.getId());
+
+        guild.addRoleToMember(snowflake, cakeDayRole).queue();
     }
 
     /**
