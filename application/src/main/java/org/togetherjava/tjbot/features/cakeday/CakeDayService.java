@@ -23,8 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 import static org.togetherjava.tjbot.db.generated.tables.CakeDays.CAKE_DAYS;
 
@@ -36,7 +34,7 @@ public class CakeDayService {
     private static final DateTimeFormatter MONTH_DAY_FORMATTER =
             DateTimeFormatter.ofPattern("MM-dd");
     private final Set<String> cakeDaysCache = new HashSet<>();
-    private final Predicate<String> cakeDayRolePredicate;
+    private final String cakeDayRolePattern;
     private final CakeDayConfig config;
     private final Database database;
 
@@ -50,7 +48,7 @@ public class CakeDayService {
         this.config = config.getCakeDayConfig();
         this.database = database;
 
-        this.cakeDayRolePredicate = Pattern.compile(this.config.rolePattern()).asPredicate();
+        this.cakeDayRolePattern = this.config.rolePattern();
     }
 
     private Optional<Role> getCakeDayRole(Guild guild) {
@@ -220,10 +218,7 @@ public class CakeDayService {
      * @return an {@link Optional} containing the cake day role if found, otherwise empty
      */
     private Optional<Role> getCakeDayRoleFromGuild(Guild guild) {
-        return guild.getRoles()
-            .stream()
-            .filter(role -> cakeDayRolePredicate.test(role.getName()))
-            .findFirst();
+        return guild.getRolesByName(cakeDayRolePattern, true).stream().findFirst();
     }
 
     /**
