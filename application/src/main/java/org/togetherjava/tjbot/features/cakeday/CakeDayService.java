@@ -33,20 +33,20 @@ public class CakeDayService {
             DateTimeFormatter.ofPattern("MM-dd");
     private final Set<String> cakeDaysCache = new HashSet<>();
     private final String cakeDayRolePattern;
-    private final CakeDayConfig config;
+    private final CakeDayConfig fullConfig;
     private final Database database;
 
     /**
      * Constructs a {@link CakeDayService} with the given configuration and database.
      *
-     * @param config the configuration for cake day management
+     * @param fullConfig the full configuration for cake day management
      * @param database the database for storing cake day information
      */
-    public CakeDayService(Config config, Database database) {
-        this.config = config.getCakeDayConfig();
+    public CakeDayService(Config fullConfig, Database database) {
+        this.fullConfig = fullConfig.getCakeDayConfig();
         this.database = database;
 
-        this.cakeDayRolePattern = this.config.rolePattern();
+        this.cakeDayRolePattern = this.fullConfig.rolePattern();
     }
 
     private Optional<Role> getCakeDayRole(Guild guild) {
@@ -54,7 +54,7 @@ public class CakeDayService {
 
         if (cakeDayRole.isEmpty()) {
             logger.warn("Cake day role with pattern {} not found for guild: {}",
-                    config.rolePattern(), guild.getName());
+                    fullConfig.rolePattern(), guild.getName());
         }
 
         return cakeDayRole;
