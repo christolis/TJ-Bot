@@ -69,13 +69,7 @@ public class CakeDayService {
      * @param guild the guild for which to reassign the cake day role
      */
     protected void reassignCakeDayRole(Guild guild) {
-        Optional<Role> cakeDayRole = getCakeDayRole(guild);
-
-        if (cakeDayRole.isEmpty()) {
-            return;
-        }
-
-        refreshMembersCakeDayRoles(cakeDayRole.get(), guild);
+        getCakeDayRole(guild).ifPresent(role -> refreshMembersCakeDayRoles(role, guild));
     }
 
     /**
