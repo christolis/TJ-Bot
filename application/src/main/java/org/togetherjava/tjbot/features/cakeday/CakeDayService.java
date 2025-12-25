@@ -263,13 +263,8 @@ public class CakeDayService {
      *         {@link Optional} if no record is found
      */
     protected Optional<CakeDaysRecord> findUserCakeDayFromDatabase(long userId) {
-        return database
-            .read(context -> context.selectFrom(CAKE_DAYS)
-                .where(CAKE_DAYS.USER_ID.eq(userId))
-                .fetch())
-            .collect(Collectors.toList())
-            .stream()
-            .findFirst();
+        return database.read(ctx -> Optional
+            .ofNullable(ctx.selectFrom(CAKE_DAYS).where(CAKE_DAYS.USER_ID.eq(userId)).fetchOne()));
     }
 
     /**
