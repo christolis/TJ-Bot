@@ -3,15 +3,12 @@ package org.togetherjava.tjbot.features.cakeday;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import org.jetbrains.annotations.NotNull;
 
-import org.togetherjava.tjbot.db.generated.tables.records.CakeDaysRecord;
 import org.togetherjava.tjbot.features.EventReceiver;
 
-import java.util.Optional;
 
 /**
  * A listener class responsible for handling cake day related events.
@@ -24,43 +21,12 @@ public class CakeDayListener extends ListenerAdapter implements EventReceiver {
         this.cakeDayService = cakeDayService;
     }
 
-    /**
-     * Handles the event of a message being received in a guild.
-     * <p>
-     * It caches the user's cake day and inserts the member's cake day into the database if not
-     * already present.
-     *
-     * @param event the {@link MessageReceivedEvent} representing the message received
-     */
     @Override
-    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        User author = event.getAuthor();
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        Guild guild = event.getGuild();
         Member member = event.getMember();
-        long authorId = author.getIdLong();
-        long guildId = event.getGuild().getIdLong();
 
-        if (member == null || author.isBot() || author.isSystem()) {
-            return;
-        }
-
-
-        if (cakeDayService.hasMemberCakeDayToday(member)) {
-            cakeDayService.addCakeDayRole(member);
-            return;
-        }
-
-        if (cakeDayService.isUserCached(author)) {
-            return;
-        }
-
-        cakeDayService.addToCache(author);
-        Optional<CakeDaysRecord> cakeDaysRecord =
-                cakeDayService.findUserCakeDayFromDatabase(authorId);
-        if (cakeDaysRecord.isPresent()) {
-            return;
-        }
-
-        cakeDayService.insertMemberCakeDayToDatabase(member, guildId);
+        cakeDayService.insertUserCakeDay(member, guild);
     }
 
     /**
