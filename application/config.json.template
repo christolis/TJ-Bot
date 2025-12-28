@@ -199,7 +199,7 @@
         "rolePattern": "Top Helper.*",
         "assignmentChannelPattern": "community-commands",
         "announcementChannelPattern": "hall-of-fame"
-    }
+    },
     "cakeDayConfig": {
         "rolePattern": "Cake Day"
     }

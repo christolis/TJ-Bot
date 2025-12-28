@@ -219,7 +219,12 @@ public class CakeDayService {
      */
     protected void removeUserCakeDay(User user, Guild guild) {
         removeMemberCakeDayFromDatabase(user.getIdLong(), guild.getIdLong());
-        cakeDaysCache.remove(guild.getId());
+        cakeDaysCache.remove(user.getId());
+    }
+
+    protected void insertUserCakeDay(Member member, Guild guild) {
+        insertMemberCakeDayToDatabase(member, guild.getIdLong());
+        cakeDaysCache.add(member.getId()); // get this checked with chris
     }
 
     /**
