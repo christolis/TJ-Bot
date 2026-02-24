@@ -159,6 +159,24 @@ public final class QuoteBoardForwarder extends MessageReceiverAdapter {
         float defaultScore = config.defaultEmojiScore();
         String reactionCode = emoji.getAsReactionCode();
 
+        if (isCountryFlag(reactionCode))
+            return 0;
+
         return config.emojiScores().getOrDefault(reactionCode, defaultScore);
+    }
+
+    public static boolean isCountryFlag(String reactionCode) {
+        int[] codePoints = reactionCode.codePoints().toArray();
+
+        if (codePoints.length != 2)
+            return false;
+
+        for (int cp : codePoints) {
+            if (cp < 0x1F1E6 || cp > 0x1F1FF) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
