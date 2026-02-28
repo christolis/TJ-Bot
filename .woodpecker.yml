@@ -1,6 +1,5 @@
 when:
   branch:
-    - develop
     - master
   event: push
 
